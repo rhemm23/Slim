@@ -1,6 +1,48 @@
 # Slim
 Light Cassandra ORM written around the datastax c# driver
 
+### Setup / Configuration
+
+To configure the ORM to use your ISession instance and cluster, simply set the GlobalConfiguration.
+
+```cs
+Cluster cluster = Cluster.Builder().AddContactPoint("127.0.0.1").Build();
+ISession session = cluster.Connect();
+
+GlobalConfiguration.SetConfiguration(new CassandraORM.Configuration()
+{
+    UseBindings = true,
+    Cluster = cluster,
+    Session = session
+});
+```
+
+UseBindings is a configuration option added to indicate whether or not the query should print out the literal value of constants,
+or add a parameter bind marker. In general, it is more appropriate to use parameter bind markers.
+
+Any classe that will be used with the ORM needs to have the proper attributes. Each class definition must have a 'Table' attribute, to define the keyspace and table. A keyspace name must be provided, however the table name is optional. If a table name is not provided, it will be infered from the class name. Class properties can have a 'Column' attribute, which will allow for you to specify the column name. If a column attribute is not supplied, the column name will be infered from the property name. All class properties will be interpreted as columns unless an 'Ignore' attribute is supplied.
+
+```cs
+[Table("UserData")]
+public class User
+{
+  [Column(Name = "username")]
+  public string Username { get; set; }
+
+  [Column(Name = "email")]
+  public string Email { get; set; }
+
+  [Column(Name = "first_name")]
+  public string FirstName { get; set; }
+
+  [Column(Name = "last_name")]
+  public string LastName { get; set; }
+  
+  [Ignore]
+  public string FullName => $"{FirstName} {LastName}";
+}
+```
+
 ### Select Builder
 
 The select builder builds a query from a series of expressions. The result can be built into query text, or executed to retrieve data.
@@ -82,24 +124,3 @@ bool executed = new InsertBuilder<User>()
                         LastName = "Doe"
                     });
 ```
-
-## Configuration
-
-To configure the ORM to use your ISession instance and cluster, simply set the GlobalConfiguration.
-
-```cs
-Cluster cluster = Cluster.Builder().AddContactPoint("127.0.0.1").Build();
-ISession session = cluster.Connect();
-
-GlobalConfiguration.SetConfiguration(new CassandraORM.Configuration()
-{
-    UseBindings = true,
-    Cluster = cluster,
-    Session = session
-});
-```
-
-UseBindings is a configuration option added to indicate whether or not the query should print out the literal value of constants,
-or add a parameter bind marker. In general, it is more appropriate to use parameter bind markers.
-
-
